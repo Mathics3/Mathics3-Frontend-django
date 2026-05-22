@@ -77,7 +77,7 @@ def format_output(evaluation, expr, html_tag_format=None):
     # This part is similar to mathics.core.evaluation.format_output().
     if html_tag_format == "text":
         boxed = format_element(expr, evaluation, SymbolOutputForm)
-        result = boxed.boxes_to_text()
+        result = f'"{boxed.to_text()}"'
 
         return safe_html_string(result)
     elif html_tag_format == "xml":

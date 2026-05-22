@@ -8,7 +8,7 @@ name = "Mathics3-Django"
 description = "A Django-based frontend for Mathics3"
 dependencies = [
      "Django >= 3.1",
-     "Mathics3 >= 10.0",
+     "Mathics3 >= 10.0.1",
      "Mathics3_Scanner >= 10.0",
      "pygments", # For colorized Python tracebacks
      "requests",
