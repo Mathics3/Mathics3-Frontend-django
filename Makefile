@@ -11,6 +11,9 @@ PYTHON ?= python
 PIP ?= pip3
 RM  ?= rm
 
+# Set default value for port
+o   ?= --port 8000
+
 MATHICS3_MODULE_OPTION ?= --load-module pymathics.graph,pymathics.natlang
 
 .PHONY: all build \

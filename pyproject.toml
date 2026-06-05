@@ -4,7 +4,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "Mathics3-Django"
+name = "Mathics3-Fronend-django"
 description = "A Django-based frontend for Mathics3"
 dependencies = [
      "Django >= 3.1",

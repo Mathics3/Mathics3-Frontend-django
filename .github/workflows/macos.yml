@@ -1,10 +1,11 @@
-name: Mathics3-django (MacOS)
+---
+name: Mathics3-Frontends-django (MacOS)
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   build:

@@ -1,11 +1,12 @@
 # -*- yaml -*-
-name: Mathics3-django (Windows)
+---
+name: Mathics3-Frontend-django (Windows)
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   build:

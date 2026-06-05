@@ -1,5 +1,5 @@
 #!/bin/bash
-PACKAGE=Mathics3-django
+PACKAGE=Mathics3-Frontend-django
 
 # FIXME put some of the below in a common routine
 function finish {

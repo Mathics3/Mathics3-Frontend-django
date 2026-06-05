@@ -1,10 +1,11 @@
-name: Mathics3-django (ubuntu)
+---
+name: Mathics3-Frontends-django (ubuntu)
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   build:
@@ -13,39 +14,39 @@ jobs:
       matrix:
         python-version: ['3.11', '3.12', '3.13', '3.14']
     steps:
-    - uses: actions/checkout@v6
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v6
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install OS dependencies
-      run: |
-        sudo apt-get update -qq && sudo apt-get install -qq liblapack-dev llvm-dev nodejs npm tesseract-ocr
-        python -m pip install --upgrade pip
-        python -m pip install setuptools
-    - name: Install Python dependencies
-      run: |
-        pip install pytest pexpect
-        # Can adjust when next Mathics3 is released
-        # git clone --depth 1 https://github.com/Mathics3/Mathics3-scanner.git
-        # cd Mathics3-scanner/
-        # pip install -e .
-        # bash -x admin-tools/make-JSON-tables.sh
-        # cd ..
-        # git clone --depth 1 https://github.com/Mathics3/mathics-core.git
-        # cd mathics-core/
-        # pip install -e . --no-build-isolation
-        # bash -x admin-tools/make-JSON-tables.sh
-        # cd ..
-        npm install
-    - name: Install Mathics3 Django
-      run: |
-        # We will do full after release of the various Mathics3 Modules
-        # python -m pip install -e .[full]
-        python -m pip install -e .
-        make develop
-    - name: Test Mathics3 Django
-      run: |
-        make pytest gstest
-        make doctest o="--exclude TextRecognize,PythonCProfileEvaluation"
-        # make check
+      - uses: actions/checkout@v6
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install OS dependencies
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -qq liblapack-dev llvm-dev nodejs npm tesseract-ocr
+          python -m pip install --upgrade pip
+          python -m pip install setuptools
+      - name: Install Python dependencies
+        run: |
+          pip install pytest pexpect
+          # Can adjust when next Mathics3 is released
+          # git clone --depth 1 https://github.com/Mathics3/Mathics3-scanner.git
+          # cd Mathics3-scanner/
+          # pip install -e .
+          # bash -x admin-tools/make-JSON-tables.sh
+            # cd ..
+          # git clone --depth 1 https://github.com/Mathics3/mathics-core.git
+          # cd mathics-core/
+          # pip install -e . --no-build-isolation
+          # bash -x admin-tools/make-JSON-tables.sh
+          # cd ..
+          npm install
+      - name: Install Mathics3 Django
+        run: |
+          # We will do full after release of the various Mathics3 Modules
+          # python -m pip install -e .[full]
+          python -m pip install -e .
+          make develop
+      - name: Test Mathics3 Django
+        run: |
+          make pytest gstest
+          make doctest o="--exclude TextRecognize,PythonCProfileEvaluation"
+          # make check
