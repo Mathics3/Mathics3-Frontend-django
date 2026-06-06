@@ -28,7 +28,7 @@ from mathics.core.definitions import Definitions
 from mathics.core.evaluation import Message, Result
 from mathics.settings import TIMEOUT, default_pymathics_modules
 
-from mathics_django.web.forms import LoginForm, SaveForm
+from mathics_django.web.html_forms import LoginForm, SaveForm
 from mathics_django.web.models import Query, Worksheet, get_session_evaluation
 
 html_formatter = HtmlFormatter(noclasses=True)
@@ -42,7 +42,9 @@ else:
 class JsonResponse(HttpResponse):
     def __init__(self, result={}):
         response = json.dumps(result)
-        super(JsonResponse, self).__init__(response, content_type=JSON_CONTENT_TYPE)
+        super(JsonResponse, self).__init__(
+            response.encode("UTF-8"), content_type=JSON_CONTENT_TYPE
+        )
 
 
 def delete(request):
