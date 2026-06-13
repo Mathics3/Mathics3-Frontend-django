@@ -29,15 +29,6 @@ FORM_TO_HTML_TAG_FORMAT: Final[Dict[str, str]] = {
 }
 
 
-def safe_html_string(value):
-    """
-    Escape characters in the
-    """
-    # TODO: check why the escaped characters are converted back to valid
-    # HTML code and processed.
-    return value  # mark_safe(escape_html(value))
-
-
 def format_output(evaluation, expr, html_tag_format=None):
     """
     Handle unformatted output using the *specific* capabilities \
@@ -69,17 +60,16 @@ def format_output(evaluation, expr, html_tag_format=None):
     # In particular for FullForm and InputForm output, we don't want
     # MathML, we want
     # plain-ol' text so we can cut and paste that.
-    expr_type = expr.get_head_name()
-    if expr_type in FORM_TO_HTML_TAG_FORMAT:
+    expr_head = expr.get_head_name()
+    if expr_head in FORM_TO_HTML_TAG_FORMAT:
         # For these forms, we strip off the outer "Form" part
-        html_tag_format = FORM_TO_HTML_TAG_FORMAT[expr_type]
+        html_tag_format = FORM_TO_HTML_TAG_FORMAT[expr_head]
 
     # This part is similar to mathics.core.evaluation.format_output().
     if html_tag_format == "text":
         boxed = format_element(expr, evaluation, SymbolOutputForm)
-        result = f'"{boxed.to_text()}"'
+        return f'"{boxed.to_text()}"'
 
-        return safe_html_string(result)
     elif html_tag_format == "xml":
         boxed = format_element(expr, evaluation, SymbolStandardForm)
         if (
@@ -93,12 +83,11 @@ def format_output(evaluation, expr, html_tag_format=None):
             return box_value[1:-1]
 
         # This can happen.
-        result = (
+        return (
             '<math display="block">'
             f"{boxed.to_mathml(evaluation=evaluation)}"
             "</math>"
         )
-        return safe_html_string(result)
     elif html_tag_format == "LaTeX":
         boxed = format_element(expr, evaluation, SymbolTeXForm)
         if hasattr(boxed, "head") and boxed.head is SymbolInterpretationBox:
@@ -117,6 +106,6 @@ def format_output(evaluation, expr, html_tag_format=None):
             result = boxed.to_text()
         else:
             result = boxed.to_tex(evaluation=evaluation)
-        return safe_html_string(result)
+        return result
 
     raise ValueError
