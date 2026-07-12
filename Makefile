@@ -90,15 +90,15 @@ install: $(THREEJS)
 
 #: Run Django-based server in production mode.
 runserver-production: $(THREEJS)
-	MATHICS3_DJANGO_DEBUG=false $(DAPHNE) -b 0.0.0.0 -p 8000 mathics_django.asgi:application
+	MATHICS3_DJANGO_DEBUG=false $(DAPHNE) -b 0.0.0.0 $o mathics_django.asgi:application
 
 #: Run Django-based server in development mode. Use environment variable "o" for manage options
 runserver: $(THREEJS)
-	MATHICS3_DJANGO_DISPLAY_EXCEPTIONS=true MATHICS3_DJANGO_LOG_ON_CONSOLE=false $(PYTHON) mathics_django/manage.py runserver $o
+	MATHICS3_DJANGO_DISPLAY_EXCEPTIONS=true MATHICS3_DJANGO_LOG_ON_CONSOLE=false $(PYTHON) mathics_django/manage.py $o runserver
 
 #: Run Django-based server in development mode with debug. Use environment variable "o" for manage options
 runserver-debug: $(THREEJS)
-	MATHICS3_DJANGO_DEBUG=true MATHICS3_DJANGO_DISPLAY_EXCEPTIONS=true MATHICS3_DJANGO_LOG_ON_CONSOLE=true $(PYTHON) mathics_django/manage.py runserver $o
+	MATHICS3_DJANGO_DEBUG=true MATHICS3_DJANGO_DISPLAY_EXCEPTIONS=true MATHICS3_DJANGO_LOG_ON_CONSOLE=true $(PYTHON) mathics_django/manage.py $o runserver
 
 #: Run Django-based server in testserver mode. Use environment variable "o" for manage options
 testserver: $(THREEJS)
