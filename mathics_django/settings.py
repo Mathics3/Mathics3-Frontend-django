@@ -89,6 +89,10 @@ DOCTEST_USER_HTML_DATA_PATH = os.environ.get(
     "DOCTEST_USER_HTML_DATA_PATH", osp.join(DATA_DIR, "doc_html_data.pcl")
 )
 
+DOCTEST_LATEX_DATA_PCL = os.environ.get(
+    "DOCTEST_LATEX_DATA_PCL", osp.join(DATA_DIR, "doctest_latex_data.pcl")
+)
+
 # We need another version as a fallback, and that is distributed with the
 # package. It is not user writable and not in the user space.
 DOC_SYSTEM_HTML_DATA_PATH = os.environ.get(
