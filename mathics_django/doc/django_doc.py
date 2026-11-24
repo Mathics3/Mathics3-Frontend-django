@@ -4,10 +4,12 @@ This code is the Django-specific part of the homegrown sphinx documentation.
 FIXME: Ditch this and hook into sphinx
 """
 
+import os
+import os.path as osp
 import pickle
+from pathlib import Path
 
 from django.utils.safestring import mark_safe
-from mathics import settings
 from mathics.doc.common_doc import (
     DocChapter,
     DocPart,
@@ -23,7 +25,41 @@ from mathics.doc.common_doc import (
 )
 
 from mathics_django.doc.utils import escape_html
-from mathics_django.settings import get_doctest_html_data_path
+from mathics_django.settings import (
+    DATA_DIR,
+    DOCTEST_LATEX_DATA_PCL,
+    get_doctest_html_data_path,
+)
+
+DOCTEST_SYSTEM_LATEX_DATA_PCL = os.environ.get(
+    "DOCTEST_SYSTEM_LATEX_DATA_PCL",
+    osp.join("Data", "doctest_latex_data.pcl"),
+)
+
+
+def get_doctest_latex_data_path(should_be_readable=False, create_parent=False) -> str:
+    """Returns a string path where we can find Python Pickle doctest data for LaTeX
+    processing.
+
+    If `should_be_readable` is True, the we will check to see whether
+    this file is readable (which also means it exists). If not, we'll
+    return the `DOCTEST_SYSTEM_DATA_PATH`.
+
+    """
+    doc_user_latex_data_pcl = Path(DOCTEST_LATEX_DATA_PCL)
+    base_config_dir = doc_user_latex_data_pcl.parent
+    if not base_config_dir.is_dir() and create_parent:
+        Path("base_config_dir").mkdir(parents=True, exist_ok=True)
+
+    if should_be_readable:
+        return (
+            DOCTEST_LATEX_DATA_PCL
+            if doc_user_latex_data_pcl.is_file()
+            else DOCTEST_SYSTEM_LATEX_DATA_PCL
+        )
+    else:
+        return DOCTEST_LATEX_DATA_PCL
+
 
 # FIXME: remove globalness
 doctest_html_data_path = get_doctest_html_data_path(should_be_readable=True)
@@ -74,14 +110,12 @@ class DjangoDocElement:
 class DjangoDocumentation(Documentation, DjangoDocElement):
     def __init__(self):
         super(DjangoDocumentation, self).__init__()
-        self.doc_dir = settings.DOC_DIR
+        self.doc_dir = DATA_DIR
 
         self.load_documentation_sources()
-        self.doctest_latex_pcl_path = settings.DOCTEST_LATEX_DATA_PCL
+        self.doctest_latex_pcl_path = DOCTEST_LATEX_DATA_PCL
         self.pymathics_doc_loaded = False
-        self.doc_data_file = settings.get_doctest_latex_data_path(
-            should_be_readable=True
-        )
+        self.doc_data_file = get_doctest_latex_data_path(should_be_readable=True)
         self.title = "Overview"
 
     def _set_classes(self):
