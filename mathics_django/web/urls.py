@@ -19,6 +19,7 @@ from mathics_django.web.controllers.doc import (
 
 # These are the callback functions.
 from mathics_django.web.views import (
+    completions,
     delete,
     get_worksheets,
     login,
@@ -36,6 +37,7 @@ urlpatterns = [
     re_path(r"^$", main_view),
     re_path(r"^about(?:\.htm(?:l)?)?$", about_page),
     re_path(r"^ajax/query/$", query),
+    re_path(r"^ajax/completions/$", completions),
     re_path(r"^ajax/login/$", login),
     re_path(r"^ajax/logout/$", logout),
     re_path(r"^ajax/save/$", save),

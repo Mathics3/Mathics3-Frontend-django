@@ -421,3 +421,102 @@ def save(request: WSGIRequest):
             "result": result,
         }
     )
+
+
+_SYSTEM_COMPLETIONS_CACHE = None
+
+
+def _build_system_completions() -> list:
+    import re
+    from mathics.core.load_builtin import (
+        _builtins,
+        import_and_load_builtins,
+        mathics3_builtins_modules,
+    )
+
+    if not mathics3_builtins_modules or not _builtins:
+        import_and_load_builtins()
+
+    dt_pattern = re.compile(r"<dt>\s*'([A-Za-z$][A-Za-z0-9$]*)'\s*(\[[^\n<]*\])")
+    tag_clean = re.compile(r"<[^>]+>")
+
+    items = []
+    seen = set()
+    for full_name, builtin in sorted(_builtins.items()):
+        short_name = full_name.split("`")[-1]
+        if (
+            not short_name
+            or short_name in seen
+            or not re.match(r"^[A-Za-z$][A-Za-z0-9$]*$", short_name)
+        ):
+            continue
+        seen.add(short_name)
+
+        summary = getattr(builtin, "summary_text", "") or ""
+        doc = getattr(builtin, "__doc__", "") or ""
+        sigs = []
+        for m in dt_pattern.finditer(doc):
+            fn_name, raw_args = m.group(1), m.group(2)
+            cleaned_args = tag_clean.sub("", raw_args).replace("$", "").replace("'", "")
+            sig_str = f"{fn_name}{cleaned_args}".strip()
+            if sig_str not in sigs:
+                sigs.append(sig_str)
+
+        is_func = bool(sigs) or (f"'{short_name}'[" in doc)
+        if not sigs and is_func:
+            sigs = [f"{short_name}[...]"]
+
+        items.append(
+            {
+                "name": short_name,
+                "summary": summary,
+                "signatures": sigs[:4],
+                "is_function": is_func,
+                "context": "System",
+            }
+        )
+    return items
+
+
+def completions(request: WSGIRequest) -> JsonResponse:
+    """Return symbol completions, call signatures, and summary docs for IntelliSense."""
+    global _SYSTEM_COMPLETIONS_CACHE
+    if _SYSTEM_COMPLETIONS_CACHE is None:
+        _SYSTEM_COMPLETIONS_CACHE = _build_system_completions()
+
+    prefix = (request.GET.get("prefix") or request.POST.get("prefix") or "").strip()
+    user_items = []
+    try:
+        evaluation = get_session_evaluation(request.session)
+        for full_user_sym in sorted(evaluation.definitions.user.keys()):
+            short_u = full_user_sym.split("`")[-1]
+            if short_u and short_u not in ("In", "Out"):
+                user_items.append(
+                    {
+                        "name": short_u,
+                        "summary": "user-defined symbol in Global`",
+                        "signatures": [short_u],
+                        "is_function": False,
+                        "context": "Global",
+                    }
+                )
+    except Exception:
+        pass
+
+    all_symbols = user_items + _SYSTEM_COMPLETIONS_CACHE
+    if prefix:
+        p_low = prefix.lower()
+        exact_prefix = [
+            s for s in all_symbols if s["name"].lower().startswith(p_low)
+        ]
+        contains = [
+            s
+            for s in all_symbols
+            if p_low in s["name"].lower() and not s["name"].lower().startswith(p_low)
+        ]
+        filtered = (exact_prefix + contains)[:50]
+    else:
+        filtered = all_symbols
+
+    return JsonResponse({"symbols": filtered})
+
