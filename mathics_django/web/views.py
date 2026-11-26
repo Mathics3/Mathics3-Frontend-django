@@ -421,3 +421,120 @@ def save(request: WSGIRequest):
             "result": result,
         }
     )
+
+
+_SYSTEM_COMPLETIONS_CACHE = None
+_SEEN_PYMATHICS_COUNT = -1
+
+
+def _extract_builtin_item(full_name: str, builtin, context_label: str) -> dict:
+    import re
+    from mathics.core.symbols import strip_context
+
+    dt_pattern = re.compile(r"<dt>\s*'([A-Za-z$][A-Za-z0-9$]*)'\s*(\[[^\n<]*\])")
+    tag_clean = re.compile(r"<[^>]+>")
+
+    short_name = strip_context(full_name)
+    summary = getattr(builtin, "summary_text", "") or ""
+    doc = getattr(builtin, "__doc__", "") or ""
+    sigs = []
+    for m in dt_pattern.finditer(doc):
+        fn_name, raw_args = m.group(1), m.group(2)
+        cleaned_args = tag_clean.sub("", raw_args).replace("$", "").replace("'", "")
+        sig_str = f"{fn_name}{cleaned_args}".strip()
+        if sig_str not in sigs:
+            sigs.append(sig_str)
+
+    is_func = bool(sigs) or (f"'{short_name}'[" in doc)
+    if not sigs and is_func:
+        sigs = [f"{short_name}[...]"]
+
+    return {
+        "name": short_name,
+        "summary": summary,
+        "signatures": sigs[:4],
+        "is_function": is_func,
+        "context": context_label,
+    }
+
+
+def _build_system_completions() -> list:
+    import re
+    from mathics.core.load_builtin import (
+        builtins_by_module,
+        builtins_dict,
+        import_and_load_builtins,
+        mathics3_builtins_modules,
+    )
+    from mathics.core.symbols import strip_context
+    from mathics.eval.pymathics import pymathics_builtins_by_module
+
+    if not mathics3_builtins_modules or not builtins_by_module:
+        import_and_load_builtins()
+
+    ident_re = re.compile(r"^[A-Za-z$][A-Za-z0-9$]*$")
+    combined = builtins_dict(builtins_by_module)
+    if pymathics_builtins_by_module:
+        combined.update(builtins_dict(pymathics_builtins_by_module))
+
+    items = []
+    seen = set()
+    for full_name, builtin in sorted(combined.items()):
+        short_name = strip_context(full_name)
+        if not short_name or short_name in seen or not ident_re.match(short_name):
+            continue
+        seen.add(short_name)
+        ctx = full_name.split("`")[0] if "`" in full_name else "System"
+        items.append(_extract_builtin_item(full_name, builtin, ctx))
+    return items
+
+
+def completions(request: WSGIRequest) -> JsonResponse:
+    """Return symbol completions, call signatures, and summary docs for IntelliSense."""
+    from mathics.core.symbols import strip_context
+    from mathics.eval.pymathics import pymathics_modules
+
+    global _SYSTEM_COMPLETIONS_CACHE, _SEEN_PYMATHICS_COUNT
+    if _SYSTEM_COMPLETIONS_CACHE is None or _SEEN_PYMATHICS_COUNT != len(
+        pymathics_modules
+    ):
+        _SYSTEM_COMPLETIONS_CACHE = _build_system_completions()
+        _SEEN_PYMATHICS_COUNT = len(pymathics_modules)
+
+    prefix = (request.GET.get("prefix") or request.POST.get("prefix") or "").strip()
+    user_items = []
+    try:
+        evaluation = get_session_evaluation(request.session)
+        for full_user_sym, defn in sorted(evaluation.definitions.user.items()):
+            short_u = strip_context(full_user_sym)
+            if short_u and short_u not in ("In", "Out"):
+                is_user_fn = bool(defn.downvalues or defn.subvalues)
+                user_items.append(
+                    {
+                        "name": short_u,
+                        "summary": "user-defined symbol in Global`",
+                        "signatures": [f"{short_u}[...]" if is_user_fn else short_u],
+                        "is_function": is_user_fn,
+                        "context": "Global",
+                    }
+                )
+    except Exception:
+        pass
+
+    all_symbols = user_items + _SYSTEM_COMPLETIONS_CACHE
+    if prefix:
+        p_low = prefix.lower()
+        exact_prefix = [
+            s for s in all_symbols if s["name"].lower().startswith(p_low)
+        ]
+        contains = [
+            s
+            for s in all_symbols
+            if p_low in s["name"].lower() and not s["name"].lower().startswith(p_low)
+        ]
+        filtered = (exact_prefix + contains)[:50]
+    else:
+        filtered = all_symbols
+
+    return JsonResponse({"symbols": filtered})
+
