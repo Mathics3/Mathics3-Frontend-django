@@ -17,14 +17,14 @@ const MathicsIntelliSense = (() => {
     let activeTextarea = null;
 
     const PRIORITY_SYMBOLS = new Set([
-        'Integrate', 'ContourIntegrate', 'PadeApproximant', 'Residue',
-        'TrigReduce', 'TrigExpand', 'TrigFactor', 'TrigToExp', 'ExpToTrig',
-        'LaplaceTransform', 'InverseLaplaceTransform', 'StieltjesPadeResolvent',
-        'NIntegrate', 'D', 'Derivative', 'Limit', 'Series', 'Solve', 'FindRoot',
-        'Simplify', 'FullSimplify', 'Expand', 'Factor', 'Apart', 'Together',
-        'Plot', 'Plot3D', 'ListPlot', 'ParametricPlot', 'PolarPlot',
+        'Integrate', 'NIntegrate', 'D', 'Derivative', 'Limit', 'Series',
+        'Solve', 'FindRoot', 'DSolve', 'Simplify', 'FullSimplify',
+        'Expand', 'Factor', 'Apart', 'Together', 'TrigReduce', 'TrigExpand',
+        'TrigToExp', 'ExpToTrig', 'Plot', 'Plot3D', 'ListPlot',
+        'ParametricPlot', 'PolarPlot', 'Table', 'Map', 'Apply', 'Select',
         'Sin', 'Cos', 'Tan', 'Cot', 'Sec', 'Csc', 'ArcTan', 'ArcSin', 'ArcCos',
-        'Sinh', 'Cosh', 'Tanh', 'Exp', 'Log', 'Sqrt', 'Gamma', 'Pi', 'E', 'I', 'Infinity', 'N'
+        'Sinh', 'Cosh', 'Tanh', 'Exp', 'Log', 'Sqrt', 'Gamma', 'Zeta',
+        'Pi', 'E', 'I', 'Infinity', 'N'
     ]);
 
     function injectStyles() {
@@ -455,11 +455,6 @@ const MathicsIntelliSense = (() => {
     }
 
     function updateForTextarea(textarea, forceOpen = false) {
-        const welcomeContainer = document.getElementById('welcomeContainer');
-        if (welcomeContainer && textarea.value.length > 0) {
-            welcomeContainer.style.opacity = '0';
-            welcomeContainer.style.pointerEvents = 'none';
-        }
         const token = extractTokenAtCaret(textarea);
         if (!token || (!forceOpen && token.word.length < 1)) {
             hidePopup();
@@ -571,6 +566,11 @@ const MathicsIntelliSense = (() => {
             return;
         }
         if (['ArrowDown', 'ArrowUp', 'Enter', 'Tab', 'Escape', 'Shift', 'Control', 'Alt'].includes(event.key)) {
+            if (event.key === 'Enter' && (event.shiftKey || event.location === 3)) {
+                hidePopup();
+                hideSignatureTooltip();
+                setTimeout(loadSymbols, 400);
+            }
             if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
                 updateSignatureTooltip(ta);
             }
